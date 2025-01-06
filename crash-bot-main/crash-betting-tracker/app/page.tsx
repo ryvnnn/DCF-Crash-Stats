@@ -1,112 +1,103 @@
-'use client';  // Add this line at the top of your file
+'use client';
 
-import { useState } from 'react';
-import Head from 'next/head';
+import { useState, useEffect } from 'react';
 
-// Define types for the data structure
 interface CrashData {
-  last10Crashes: number[];
-  hits1000: number[];
-  hits1: number[];
-  averageCrash: number;
+  crashValue: number;
+  timestamp: number;
 }
 
-interface PredictionResult {
-  payout: string;
-  chance: string;
-}
+const Page = () => {
+  const [crashData, setCrashData] = useState<CrashData[]>([]);
+  const [percentage, setPercentage] = useState<number>(120); // Input value for percentage
+  const [suggestedPercentage, setSuggestedPercentage] = useState<number>(0); // Calculated suggested percentage
+  const [averagePercentage, setAveragePercentage] = useState<number>(83); // Placeholder for average percentage
+  const [last1000, setLast1000] = useState<CrashData[]>([]);
+  const [last1, setLast1] = useState<CrashData[]>([]);
 
-// Sample Data (Mock Data)
-const crashData: CrashData = {
-  last10Crashes: [1.10, 1.13, 1.09, 1.08, 1.15, 1.20, 1.12, 1.09, 1.05, 1.18],
-  hits1000: [1000, 1000, 1000, 1020, 1000, 999, 1025, 1010],
-  hits1: [1, 1.2, 1, 1.1, 0.98, 1.05, 1.02, 1.04],
-  averageCrash: 1.10, // Mock average value for prediction purposes
-};
+  useEffect(() => {
+    // Simulating crash data fetch or use your actual data fetching logic
+    const fetchedData: CrashData[] = [
+      { crashValue: 110, timestamp: Date.now() - 1000 },
+      { crashValue: 120, timestamp: Date.now() - 2000 },
+      { crashValue: 100, timestamp: Date.now() - 3000 },
+      { crashValue: 90, timestamp: Date.now() - 4000 },
+      { crashValue: 115, timestamp: Date.now() - 5000 },
+    ];
+    
+    setCrashData(fetchedData);
+    setLast1000(fetchedData.slice(0, 10));  // Simulating last 1000% hit
+    setLast1(fetchedData.slice(0, 5)); // Simulating last 1% hit
+  }, []);
 
-export default function Home() {
-  const [inputPercentage, setInputPercentage] = useState<string>('');
-  const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
+  const handlePercentageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newPercentage = parseFloat(event.target.value);
+    setPercentage(newPercentage);
+    calculateSuggestedPercentage(newPercentage);
+  };
 
-  const calculatePrediction = () => {
-    const percentage = parseFloat(inputPercentage);
-    if (isNaN(percentage) || percentage <= 0) {
-      alert('Please enter a valid percentage.');
-      return;
-    }
-
-    // Calculate the predicted likelihood based on previous data
-    let predictionLikelihood = crashData.averageCrash;
-
-    // Check the range of recent crashes to predict likelihood
-    const recentCrashes = crashData.last10Crashes.slice(-5); // Last 5 crashes
-    const lowHits = recentCrashes.filter(val => val <= 1.10); // Low value hit check
-    const highHits = recentCrashes.filter(val => val > 1.10); // High value hit check
-
-    if (lowHits.length > highHits.length) {
-      predictionLikelihood = 0.95; // If it's been hitting low, we have a higher chance of hitting soon
-    }
-
-    // Calculate expected payout based on the input
-    const predictedPayout = (percentage / 100) * predictionLikelihood;
-
-    setPredictionResult({
-      payout: predictedPayout.toFixed(2),
-      chance: (predictionLikelihood * 100).toFixed(2),
-    });
+  const calculateSuggestedPercentage = (inputPercentage: number) => {
+    // Example logic for calculating the suggested percentage
+    const crashValues = crashData.map((data) => data.crashValue);
+    const lowCrashValues = crashValues.filter((value) => value >= 101 && value <= 110);
+    
+    const suggested = averagePercentage + (lowCrashValues.length / crashValues.length) * 12; // Increase percentage based on historical data
+    setSuggestedPercentage(suggested);
   };
 
   return (
-    <div className="container">
-      <Head>
-        <title>Crash Betting Tracker</title>
-      </Head>
-
-      <h1>Crash Betting Tracker</h1>
+    <div style={{ padding: '20px' }}>
+      <h1>Crash Game Stats</h1>
 
       {/* Last 10 Crash Values */}
       <section>
         <h2>Last 10 Crash Values</h2>
         <ul>
-          {crashData.last10Crashes.map((value, index) => (
-            <li key={index}>{(value * 100).toFixed(2)}%</li>
+          {crashData.slice(0, 10).map((data, index) => (
+            <li key={index}>
+              Crash Value: {data.crashValue} at {new Date(data.timestamp).toLocaleTimeString()}
+            </li>
           ))}
         </ul>
       </section>
 
-      {/* Last 1000% Hit */}
+      {/* When the last 1000% hit */}
       <section>
-        <h2>Last 1000% Hit</h2>
-        <p>Last 1000% hit at: {crashData.hits1000[crashData.hits1000.length - 1]}%</p>
+        <h2>When the Last 1000% Hit</h2>
+        <ul>
+          {last1000.map((data, index) => (
+            <li key={index}>
+              Crash Value: {data.crashValue} at {new Date(data.timestamp).toLocaleTimeString()}
+            </li>
+          ))}
+        </ul>
       </section>
 
-      {/* Last 1% Hit */}
+      {/* When the last 1% hit */}
       <section>
-        <h2>Last 1% Hit</h2>
-        <p>Last 1% hit at: {crashData.hits1[crashData.hits1.length - 1]}%</p>
+        <h2>When the Last 1% Hit</h2>
+        <ul>
+          {last1.map((data, index) => (
+            <li key={index}>
+              Crash Value: {data.crashValue} at {new Date(data.timestamp).toLocaleTimeString()}
+            </li>
+          ))}
+        </ul>
       </section>
 
-      {/* Bet Prediction */}
+      {/* Input for Percentage */}
       <section>
-        <h2>Bet Prediction</h2>
-        <label htmlFor="percentageInput">Enter your target percentage:</label>
+        <h2>Set Your Desired Percentage</h2>
         <input
           type="number"
-          id="percentageInput"
-          value={inputPercentage}
-          onChange={(e) => setInputPercentage(e.target.value)}
-          placeholder="120%"
+          value={percentage}
+          onChange={handlePercentageChange}
+          style={{ padding: '10px', fontSize: '16px', marginBottom: '10px' }}
         />
-        <button onClick={calculatePrediction}>Calculate Prediction</button>
-
-        {predictionResult && (
-          <div>
-            <p>With a {inputPercentage}% target, your expected payout is:</p>
-            <p><strong>{predictionResult.payout} SOL</strong></p>
-            <p>Chance of hitting: {predictionResult.chance}%</p>
-          </div>
-        )}
+        <p>Your calculated percentage: {suggestedPercentage}%</p>
       </section>
     </div>
   );
-}
+};
+
+export default Page;
